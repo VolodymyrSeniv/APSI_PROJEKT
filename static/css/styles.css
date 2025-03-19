@@ -115,3 +115,17 @@ form button {
     background-color: #007bff;  /* Primary color similar to Bootstrap's primary */
 }
 
+.title {
+    text-decoration: bold;
+    transition: color 0.3s ease, transform 0.3s ease;
+    padding: 2px 4px; /* Add some padding for the border */
+    border-radius: 4px; /* Slightly rounded corners */
+    font-weight: bold;
+}
+
+.title:hover {
+    color: #0056b3; /* Darker shade of blue */
+    transform: scale(1.1); /* Slightly scale up the text */
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Blue glow around the text */
+    border: 1px solid #007bff; /* Blue border around the text */
+}

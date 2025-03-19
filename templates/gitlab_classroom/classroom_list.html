@@ -26,7 +26,7 @@
             {% for classroom in classroom_list %}
             <tr>
                 <td>{{ classroom.id }}</td>
-                <td><a href="{{ classroom.get_absolute_url }}">{{ classroom.title }}</a></td>
+                <td><a href="{{ classroom.get_absolute_url }}" class="title">{{ classroom.title }}</a></td>
                 <td><a class="btn btn-info" href="{% url 'gitlab_classroom:classroom-update' pk=classroom.id %}">Update</a></td>
                 <td><a class="btn btn-danger" href="{% url 'gitlab_classroom:classroom-delete' pk=classroom.id %}" onclick="return confirm('Are you sure?');">Delete</a></td>
             </tr>

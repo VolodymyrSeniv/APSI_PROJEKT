@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}
-    <title>Index</title>
-{% endblock%}
+    <title>User Profile</title>
+{% endblock %}
 {% block content %}
     <div class="container mt-5">
-        <div class="card" style="width: 18rem;">
-            <div class="card-body">
+        <div class="card shadow-lg" style="max-width: 400px; margin: auto;">
+            <div class="card-body text-center">
                 <h5 class="card-title">{{ name }}</h5>
-                <h6 class="card-text">{{ email }}</h6>
+                <hr>
+                <p class="card-text">{{email}}</p>
             </div>
         </div>
     </div>

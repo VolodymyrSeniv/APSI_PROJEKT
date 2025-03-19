@@ -8,22 +8,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <h1 class="card-title mb-0">{{ assignment.title }}</h1> <!-- mb-0 removes bottom margin from h1 if any -->
-                        {% if assignment.repo_url %}
-                            <a href="{{ assignment.repo_url }}" class="btn btn-primary">View Repository</a>
-                        {% else %}
-                            <span class="text-danger">Repository URL not available</span>
-                        {% endif %}
                     </div>
                     <h6>Classroom: {{assignment.classroom.title}}</h6>
                     <h6 class="text-muted">Creation date: {{ assignment.creation_date }}</h6>
                     <h6 class="text-muted">Deadline: {{ assignment.deadline }}</h6>
-                    <p class="card-text">{{ assignment.description }}</p>
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ fork_projects_form|crispy }}
-                        <button class="btn btn-success" type="submit">Fork Project</button>
-                    </form>
-                    <br>
+                    <p class="card-text">Description: {{ assignment.description }}</p>
+                    <p class="card-text">Template ID: {{ assignment.template_id }}</p>
                 </div>
             </div>
         </div>

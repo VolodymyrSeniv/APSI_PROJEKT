@@ -4,43 +4,61 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Students</h1>
-        <a class="btn btn-primary" href="{% url 'gitlab_classroom:student-create' %}">+ Add Student</a>
+        <div class="d-flex align-items-center ms-auto">
+            <form id="uploadForm" method="post" enctype="multipart/form-data" class="me-2">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="file" id="fileInput" name="file" style="display: none;" onchange="document.getElementById('uploadForm').submit();">
+                <button type="button" class="btn btn-success me-2 mb-2" onclick="document.getElementById('fileInput').click();">
+                    Upload Students
+                </button>
+            </form>            
+            <form method="post" action="" class="me-2">
+                {% csrf_token %}
+                <button type="submit" name="check_gitlab" class="btn btn-primary me-2 mb-2">Check GitLab Accounts</button>
+            </form>
+            <a class="btn btn-primary me-2" href="{% url 'gitlab_classroom:student-create' %}">+ Add Student</a>
+        </div>        
     </div>
-    
-    <form method="get" action="" class="d-flex align-items-center mb-3">
-        {{ search_form|crispy }}
-        <button class="btn btn-secondary ms-2 mb-2" type="submit">🔎 Search</button>
-    </form>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <form method="get" action="" class="d-flex align-items-center w-100">
+            {{ search_form|crispy }}
+            <button class="btn btn-secondary m-2" type="submit">🔎 Search</button>
+        </form>
+    </div>
 
     {% if student_list %}
-    <table class="table table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>GitLab username</th>
-                <th>GitLab Sync</th>
-                <th>Update</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in student_list %}
-            <tr>
-                <td>{{ student.id }}</td>
-                <td><a href="{{ student.get_absolute_url }}">{{ student.gitlab_username }}</a></td>
-                <td>
-                    {% if student.gl_flag %}
-                        <span class="text-success">&#10003;</span> <!-- This is a tick for True -->
-                    {% else %}
-                        <span class="text-danger">&#10007;</span> <!-- This is a cross for False -->
-                    {% endif %}
-                </td>
-                <td><a class="btn btn-info" href="{% url 'gitlab_classroom:student-update' pk=student.id %}">Update</a></td>
-                <td><a class="btn btn-danger" href="{% url 'gitlab_classroom:student-delete' pk=student.id %}" onclick="return confirm('Are you sure?');">Delete</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>GitLab username</th>
+                    <th>GitLab Sync</th>
+                    <th>Update</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in student_list %}
+                <tr>
+                    <td>{{ student.id }}</td>
+                    <td><a href="{{ student.get_absolute_url }}" class="title">{{ student.gitlab_username }}</a></td>
+                    <td>
+                        {% if student.gl_flag %}
+                            <span class="text-success">&#10003;</span> <!-- Tick for True -->
+                        {% else %}
+                            <span class="text-danger">&#10007;</span> <!-- Cross for False -->
+                        {% endif %}
+                    </td>
+                    <td><a class="btn btn-info" href="{% url 'gitlab_classroom:student-update' pk=student.id %}">Update</a></td>
+                    <td><a class="btn btn-danger" href="{% url 'gitlab_classroom:student-delete' pk=student.id %}" onclick="return confirm('Are you sure?');">Delete</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <h2 class="text-center">There are no students.</h2>
     {% endif %}

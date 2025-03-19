@@ -32,6 +32,10 @@ def login_view(request: HttpRequest) -> HttpResponse:
             error_context = {
                 "error": "Invalid access token"
             }
+        except Exception as e:
+            error_context = {
+                "error": f"Error occured: {e}. Try to login again."
+            }
         return render(request, "accounts/login.html", context=error_context)
 
 def logout_view(request: HttpRequest) -> HttpResponse:
