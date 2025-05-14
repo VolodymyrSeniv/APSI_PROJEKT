@@ -15,8 +15,8 @@ class TeacherAdmin(UserAdmin):
 
 @admin.register(Classroom)
 class ClassroomAdmin(admin.ModelAdmin):
-    list_display = ["title", "creation_date", "organization", "teacher", ]
-    list_filter = ["teacher", ]
+    list_display = ["title", "creation_date", "organization", "created_by",]
+    list_filter = ["created_by", ]
     search_fields = ["title", ]
 
 

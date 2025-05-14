@@ -1,66 +1,128 @@
+{# templates/gitlab_classroom/classroom_detail.html #}
 {% extends "base.html" %}
 {% load crispy_forms_filters %}
+
 {% block content %}
-
 <div class="container mt-5">
-    <h1 class="mb-5">{{ classroom.title }} <small class="text-muted">Classroom ID: {{classroom.gitlab_id}}</small></h1>
-    <div class="row">
-        <!-- Assignments Section -->
-        <div class="col-md-6">
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Assignments:</h2>
-                    <a href="{% url 'gitlab_classroom:assignment-create' pk=classroom.id %}" type="submit" name="add_assignment" class="btn btn-primary mb-0">+ Add Assignment</a>
-                </div>
-            </div>
-            <ul class="list-group mt-3">
-                {% for assignment in classroom.assignment.all %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{{assignment.get_absolute_url}}" class="assignment-title d-block mb-2">{{ assignment.title }}</a>
-                        <div class="d-flex flex-wrap align-items-center justify-content-center">
-                                {% if assignment.repo_url %}
-                                        <a href="{{ assignment.repo_url }}" class="btn btn-primary">Repository</a>
-                                    {% else %}
-                                        <span class="text-danger">Repository URL not available</span>
-                                {% endif %}
-                                <form method="post" action="">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
-                                    <button type="submit" name="fork_projects" class="btn btn-success me-2 mb-2 ms-2">Fork</button>
-                                </form>
-                        </div>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+  <h1 class="mb-3">
+    {{ classroom.title }}
+    <small class="text-muted">Classroom ID: {{ classroom.gitlab_id }}</small>
+  </h1>
 
-        <!-- Students Section -->
-        <div class="col-md-6">
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Students:</h2>
-                    <form method="post" class="d-flex align-items-center me-2">
-                        {% csrf_token %}
-                        <div class="d-flex align-items-center">
-                            {{ add_student_form|crispy }}
-                            <button type="submit" name="add_student" class="btn btn-primary m-1">Add Student</button>
-                        </div>
-                    </form>
-                </div>
+  <div class="row gy-4">
+    <!-- Assignments Column -->
+    <div class="col-md-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Assignments</h2>
+        <a
+          href="{% url 'gitlab_classroom:assignment-create' pk=classroom.id %}"
+          class="btn btn-sm btn-primary"
+        >+ New</a>
+      </div>
+
+      <ul class="list-group">
+        {% for assignment in classroom.assignment.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ assignment.get_absolute_url }}" class="flex-grow-1">
+              {{ assignment.title }}
+            </a>
+            <div class="btn-group btn-group-sm">
+              {% if assignment.repo_url %}
+                <a href="{{ assignment.repo_url }}" class="btn btn-info">Repo</a>
+              {% endif %}
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                <button
+                  type="submit"
+                  name="fork_projects"
+                  class="btn btn-success"
+                >Fork</button>
+              </form>
             </div>
-            <ul class="list-group mt-3">
-                {% for student in classroom.students.all %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{{student.get_absolute_url}}">{{ student.first_name }} {{ student.second_name }}</a>
-                    <form method="post" class="form-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <button type="submit" name="remove_student" class="btn btn-danger m-2">Remove</button>
-                    </form>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No assignments yet.</li>
+        {% endfor %}
+      </ul>
     </div>
+
+    <!-- Students Column -->
+    <div class="col-md-4">
+      <div class="mb-3">
+        <h2>Students</h2>
+        <form method="post" class="d-flex align-items-end">
+          {% csrf_token %}
+          {{ add_student_form|crispy }}
+          <button type="submit" name="add_student" class="btn btn-primary ms-2">
+            Add
+          </button>
+        </form>
+      </div>
+
+      <ul class="list-group">
+        {% for student in classroom.students.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ student.get_absolute_url }}">
+              {{ student.first_name }} {{ student.second_name }}
+            </a>
+            <form method="post" class="m-0">
+              {% csrf_token %}
+              <input type="hidden" name="student_id" value="{{ student.id }}">
+              <button
+                type="submit"
+                name="remove_student"
+                class="btn btn-sm btn-danger"
+              >Remove</button>
+            </form>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No students yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+<!-- Teachers Column -->
+<div class="col-md-4">
+  <div class="mb-3">
+    <h2>Teachers</h2>
+    <form method="post" class="d-flex align-items-end">
+      {% csrf_token %}
+      {{ add_teacher_form|crispy }}
+      <button type="submit" name="add_teacher" class="btn btn-primary ms-2">
+        Add
+      </button>
+    </form>
+  </div>
+
+  <ul class="list-group">
+    {% for teacher in classroom.teachers.all %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>
+          {{ teacher.get_full_name }}
+          {% if teacher.pk == classroom.created_by_id %}
+            <small class="text-muted">(creator)</small>
+          {% endif %}
+        </span>
+
+        {# only show Remove if this isn’t the creator #}
+        {% if teacher.pk != classroom.created_by_id %}
+          <form method="post" class="m-0">
+            {% csrf_token %}
+            <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+            <button
+              type="submit"
+              name="remove_teacher"
+              class="btn btn-sm btn-danger"
+            >Remove</button>
+          </form>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="list-group-item text-muted">No teachers yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+  </div>
 </div>
 {% endblock %}

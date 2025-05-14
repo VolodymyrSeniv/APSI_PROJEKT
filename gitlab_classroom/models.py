@@ -36,11 +36,15 @@ class Classroom(models.Model): #classroom database model
     description = models.TextField()
     organization = models.CharField(max_length=255, blank=False)
     gitlab_id = models.IntegerField(default=0, blank=True)
-    teacher = models.ForeignKey(
+    created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE, 
-        related_name="classroom"
+        related_name="classroom_created_by"
         )
+    teachers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="classroom_teachers"
+    )
     students = models.ManyToManyField(Student, related_name="classroom")
 
     class Meta:#ordering

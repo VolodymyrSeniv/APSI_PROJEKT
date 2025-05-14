@@ -1,5 +1,8 @@
 from django import forms
-from gitlab_classroom.models import Assignment, Student, Classroom
+from gitlab_classroom.models import (Assignment,
+                                     Student,
+                                     Classroom,
+                                     Teacher)
 
 
 class AssignmentForm(forms.ModelForm):
@@ -27,6 +30,22 @@ class AddStudentToClassroomForm(forms.Form):
             classroom = Classroom.objects.get(pk=classroom_id)
             # Exclude students who are already in this classroom
             self.fields['student'].queryset = Student.objects.exclude(id__in=classroom.students.all())
+
+
+class AddTeachersToClassroomForm(forms.Form):
+    teacher = forms.ModelChoiceField(
+        queryset=Teacher.objects.none(),
+        label="",
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        classroom_id = kwargs.pop('classroom_id', None)
+        super(AddTeachersToClassroomForm, self).__init__(*args, **kwargs)
+        if classroom_id:
+            classroom = Classroom.objects.get(pk=classroom_id)
+            # Exclude students who are already in this classroom
+            self.fields['teacher'].queryset = Teacher.objects.exclude(id__in=classroom.teachers.all())
 
 
 class RemoveStudentFromClassroomForm(forms.Form):

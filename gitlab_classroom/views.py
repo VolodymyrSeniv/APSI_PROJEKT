@@ -2,6 +2,7 @@ import csv
 import json
 import gitlab
 import re
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.forms import BaseModelForm
 from django.shortcuts import render, redirect
@@ -11,8 +12,9 @@ from gitlab_classroom.forms import (ClassroomSearchForm,
                                     AssignmentSearchForm,
                                     StudentSearchForm,
                                     AddStudentToClassroomForm,
+                                    AddTeachersToClassroomForm,
                                     UploadFileForm)
-from gitlab_classroom.models import Classroom, Assignment, Student
+from gitlab_classroom.models import Classroom, Assignment, Student, Teacher
 from gitlab_classroom.forms import AssignmentForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
@@ -45,7 +47,9 @@ class ClassroomsListView(LoginRequiredMixin, generic.ListView):
         return context
 
     def get_queryset(self):
-        queryset = Classroom.objects.select_related("teacher").prefetch_related("students").filter(teacher=self.request.user)
+        queryset = Classroom.objects.select_related("created_by").prefetch_related("students", "teachers").filter(created_by=self.request.user).filter(
+                    Q(created_by=self.request.user) |
+                    Q(teachers=self.request.user)).distinct()
         form = ClassroomSearchForm(self.request.GET)
         if form.is_valid():
             return queryset.filter(title__icontains=form.cleaned_data["title"])
@@ -62,6 +66,7 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
         context = super().get_context_data(**kwargs)
         classroom_id = self.kwargs.get('pk')
         context['add_student_form'] = AddStudentToClassroomForm(classroom_id=classroom_id)
+        context['add_teacher_form'] = AddTeachersToClassroomForm(classroom_id=classroom_id)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -86,8 +91,29 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                     messages.error(self.request, "Student has no account on GitLab.")
                 except Exception as e:
                     messages.error(self.request, "Student has no account on GitLab.")
+        
+        if "add_teacher" in request.POST:
+            add_form = AddTeachersToClassroomForm(request.POST, classroom_id=classroom_id)
+            if add_form.is_valid():
+                try:
+                    teacher = add_form.cleaned_data['teacher']
+                    group = gl.groups.get(self.object.gitlab_id)
+                    subgroups = group.subgroups.list(all=True)
+                    members_group = gl.groups.get(subgroups[1].id)
+                    if subgroups:
+                        member = members_group.members.create({
+                        'user_id': teacher.gitlab_id,
+                        'access_level': gitlab.const.MAINTAINER_ACCESS
+                    })
+                    self.object.teachers.add(teacher)
+                    messages.success(request, f"Teacher {teacher.get_full_name()} added.")
+                    return HttpResponseRedirect(self.object.get_absolute_url())
+                except GitlabGetError:
+                    messages.error(request, "That user does not exist on GitLab.")
+                except Exception as e:
+                    messages.error(request, f"Could not add teacher: {e}")
 
-        elif 'remove_student' in request.POST:
+        if 'remove_student' in request.POST:
             student_id = request.POST.get('student_id')
             if student_id:
                 try:
@@ -104,6 +130,24 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                     self.object.students.remove(student)
                 except Exception as e:
                     messages.error(self.request, f"Student is no longer a GitLab group member: {e}.")
+        
+        if "remove_teacher" in request.POST:
+            teacher_id = request.POST.get("teacher_id")
+            if teacher_id:
+                try:
+                    group = gl.groups.get(self.object.gitlab_id)
+                    subgroups = group.subgroups.list(all=True)
+                    members_group = gl.groups.get(subgroups[1].id)
+                    teacher = get_object_or_404(Teacher, id=teacher_id)
+                    member = members_group.members.get(teacher.gitlab_id)
+                    member.delete()
+                    self.object.teachers.remove(teacher)
+                    return HttpResponseRedirect(self.object.get_absolute_url())
+                except GitlabGetError:
+                    messages.error(self.request, "Teacher is no longer a GitLab group member.")
+                    self.object.teachers.remove(teacher)
+                except Exception as e:
+                    messages.error(self.request, f"Teacher is no longer a GitLab group member: {e}.")
 
         elif 'fork_projects' in request.POST:
             assignment_id = request.POST.get('assignment_id')
@@ -178,7 +222,7 @@ class ClassroomCreateView(LoginRequiredMixin, generic.CreateView):
     
     def form_valid(self, form):
         user = self.request.user
-        form.instance.teacher = user
+        form.instance.created_by = user
         response = super().form_valid(form)
 
         try:
@@ -219,6 +263,9 @@ class ClassroomCreateView(LoginRequiredMixin, generic.CreateView):
         assignments = create_subgroup("ASSIGNMENTS", "Assignments folder")
 
         self.object.gitlab_id = group.id
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        form.instance.teachers.add(self.request.user)
         self.object.save()
         messages.success(self.request, "Classroom was successfully created.")
         return response
@@ -515,7 +562,7 @@ class StudentDeleteView(LoginRequiredMixin, generic.DeleteView):
 #this is a classbased representation of assignments
 class AssignmentsListView(LoginRequiredMixin, generic.ListView):
     model = Assignment
-    queryset = Assignment.objects.select_related("classroom", "classroom__teacher").prefetch_related("classroom__students")
+    queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("classroom__students")
     #above i am fixing n+1 problem i should fix it later
     paginate_by = 5
 
@@ -528,7 +575,7 @@ class AssignmentsListView(LoginRequiredMixin, generic.ListView):
         return context
 
     def get_queryset(self):
-        queryset = Assignment.objects.select_related("classroom", "classroom__teacher").prefetch_related("classroom__students").filter(teacher=self.request.user)
+        queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("classroom__students").filter(teacher=self.request.user)
         form = AssignmentSearchForm(self.request.GET)
         if form.is_valid():
             return queryset.filter(title__icontains=form.cleaned_data["title"])
