@@ -99,7 +99,7 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                     teacher = add_form.cleaned_data['teacher']
                     group = gl.groups.get(self.object.gitlab_id)
                     subgroups = group.subgroups.list(all=True)
-                    members_group = gl.groups.get(subgroups[1].id)
+                    members_group = gl.groups.get(subgroups[2].id)
                     if subgroups:
                         member = members_group.members.create({
                         'user_id': teacher.gitlab_id,
@@ -156,8 +156,9 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                     gitlab_template_id = assignment.template_id
                     assignments_group = gl.groups.get(assignment.gitlab_id)
                     classroom_group = gl.groups.get(self.object.gitlab_id)
-                    members_group = self.create_or_get_subgroup(classroom_group, 'MEMBERS')
-                    self.fork_project_for_students(assignments_group, gitlab_template_id, members_group)
+                    students_group = self.create_or_get_subgroup(classroom_group, 'STUDENTS')
+                    teachers_group = self.create_or_get_subgroup(classroom_group, "TEACHERS")
+                    self.fork_project_for_students(assignments_group, gitlab_template_id, students_group, teachers_group)
                     messages.success(self.request, "Projects successfully forked for all students.")
             except Exception as e:
                     messages.error(self.request, f"An error occurred during forking: {e}")
@@ -179,10 +180,11 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
         }
         return gl.groups.create(subgroup_data)
 
-    def fork_project_for_students(self, assignments_group, base_project_id, student_group):
+    def fork_project_for_students(self, assignments_group, base_project_id, student_group, teachers_group):
         user = self.request.user
         gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
         students = gl.groups.get(student_group.id).members.list(all=True)
+        teachers = gl.groups.get(teachers_group.id).members.list(all=True)
         base_project = gl.projects.get(base_project_id)
         for student in students:
             if int(student.id) != int(user.gitlab_id):
@@ -198,11 +200,18 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                         'path': sanitized_project_name
                     })
                     forked_project = gl.projects.get(forked_project_data.id)
-
                     forked_project.members.create({
                         'user_id': student.id,
                         'access_level': gitlab.const.AccessLevel.DEVELOPER
                     })
+                    for teacher in teachers:
+                        # you might want to skip yourself if you're also in that list
+                        if int(teacher.id) == int(user.gitlab_id):
+                            continue
+                        forked_project.members.create({
+                            'user_id': teacher.id,
+                            'access_level': gitlab.const.AccessLevel.MAINTAINER 
+                        })
                     print(f"Project forked for {student.username} in subgroup {personal_group_name}")
 
         return self.render_to_response(self.get_context_data())
@@ -259,8 +268,9 @@ class ClassroomCreateView(LoginRequiredMixin, generic.CreateView):
             }
             return gl.groups.create(subgroup_data)
 
-        members = create_subgroup("MEMBERS", "Classroom Members")
-        assignments = create_subgroup("ASSIGNMENTS", "Assignments folder")
+        create_subgroup("STUDENTS", "Classroom Students")
+        create_subgroup("TEACHERS", "Classroom Teachers")
+        create_subgroup("ASSIGNMENTS", "Assignments folder")
 
         self.object.gitlab_id = group.id
         form.instance.created_by = self.request.user
