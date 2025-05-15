@@ -47,9 +47,7 @@ class ClassroomsListView(LoginRequiredMixin, generic.ListView):
         return context
 
     def get_queryset(self):
-        queryset = Classroom.objects.select_related("created_by").prefetch_related("students", "teachers").filter(created_by=self.request.user).filter(
-                    Q(created_by=self.request.user) |
-                    Q(teachers=self.request.user)).distinct()
+        queryset = Classroom.objects.select_related("created_by").prefetch_related("students", "teachers").filter(Q(created_by=self.request.user) | Q(teachers=self.request.user)).distinct()
         form = ClassroomSearchForm(self.request.GET)
         if form.is_valid():
             return queryset.filter(title__icontains=form.cleaned_data["title"])
@@ -256,7 +254,6 @@ class ClassroomCreateView(LoginRequiredMixin, generic.CreateView):
             self.object.delete()  # Clean up the created object on failure
             return HttpResponse(status=500)  # Internal Server Error
 
-        # Create members and assignments subgroups
         def create_subgroup(name_suffix, description):
             subgroup_path = f"{group_data['path']}_{name_suffix}".strip('-.')
 
@@ -572,8 +569,7 @@ class StudentDeleteView(LoginRequiredMixin, generic.DeleteView):
 #this is a classbased representation of assignments
 class AssignmentsListView(LoginRequiredMixin, generic.ListView):
     model = Assignment
-    queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("classroom__students")
-    #above i am fixing n+1 problem i should fix it later
+    queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("students", "teachers")
     paginate_by = 5
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -585,12 +581,13 @@ class AssignmentsListView(LoginRequiredMixin, generic.ListView):
         return context
 
     def get_queryset(self):
-        queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("classroom__students").filter(teacher=self.request.user)
+        queryset = Assignment.objects.select_related("classroom", "classroom__created_by").prefetch_related("students", "teachers")
+        queryset = queryset.filter(Q(classroom__teachers=self.request.user) | Q(classroom__created_by=self.request.user))
         form = AssignmentSearchForm(self.request.GET)
         if form.is_valid():
-            return queryset.filter(title__icontains=form.cleaned_data["title"])
+            queryset = queryset.filter(title__icontains=form.cleaned_data["title"])
         """Override to filter assignments to those owned by the current user."""
-        return queryset
+        return queryset.distinct()
 
 
 class AssignmentsDetailView(LoginRequiredMixin, generic.DetailView):

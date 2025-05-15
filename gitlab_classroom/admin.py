@@ -22,6 +22,6 @@ class ClassroomAdmin(admin.ModelAdmin):
 
 @admin.register(Assignment)
 class AssignmentAdmin(admin.ModelAdmin):
-    list_display = ["title", "creation_date", "deadline", "teacher", "classroom", ]
-    list_filter = ["teacher", "creation_date", ]
+    list_display = ["title", "creation_date", "deadline", "is_group", "classroom", ]
+    list_filter = ["creation_date", ]
     search_fields = ["title", ]

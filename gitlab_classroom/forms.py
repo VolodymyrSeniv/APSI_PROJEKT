@@ -8,7 +8,7 @@ from gitlab_classroom.models import (Assignment,
 class AssignmentForm(forms.ModelForm):
     class Meta:
         model = Assignment
-        fields = ["title", "description", "template_id", "deadline"]
+        fields = ["title", "description", "is_group", "template_id", "deadline"]
         widgets = {
             'deadline': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'template_id': forms.TextInput(attrs={'type': 'text'}),

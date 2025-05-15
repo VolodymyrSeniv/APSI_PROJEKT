@@ -65,16 +65,16 @@ class Assignment(models.Model): #assigment database model
     repo_url = models.URLField()
     gitlab_id = models.IntegerField(default=0, blank=True)
     students = models.ManyToManyField(Student, related_name="assignment")
+    is_group = models.BooleanField() 
     template_id = models.IntegerField()
-    teacher = models.ForeignKey(
+    teachers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="assignment"
+        related_name="assignment_teachers"
         )
     classroom = models.ForeignKey(
         Classroom,
         on_delete=models.CASCADE,
-        related_name="assignment"
+        related_name="assignment_classroom"
         )
 
     class Meta:
