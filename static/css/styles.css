@@ -129,3 +129,49 @@ form button {
     box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Blue glow around the text */
     border: 1px solid #007bff; /* Blue border around the text */
 }
+
+
+
+
+.btn-unified {
+    background-color: #0d6efd;
+    color: #fff;
+    border: 1px solid #0d6efd;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: Arial, sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    height: 38px;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    vertical-align: middle; 
+}
+
+
+.row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: nowrap;
+    align-items: flex-start; 
+  }
+  
+  .col-md-4 {
+    flex: 1 1 0; 
+    max-width: 33.3333%; 
+  }
+
+  .assignments-list {
+    margin-top: 43px;
+  }
+
+  .d-flex.justify-content-between.align-items-center {
+    align-items: baseline; 
+  }
