@@ -14,11 +14,16 @@ from gitlab_classroom.views import (index,
                           StudentsDetailView,
                           StudentCreateView,
                           StudentUpdateView,
-                          StudentDeleteView)
+                          StudentDeleteView,
+                          AssessmentUpdateView)
 
 
 urlpatterns = [
     path("", index, name="index"),
+    path("assignments/<int:assignment_pk>/assess/<int:student_pk>/",
+    AssessmentUpdateView.as_view(),
+    name="assessment-update",
+    ),
     path("classrooms/", ClassroomsListView.as_view(), name="classroom-list"),
     path("assignments/", AssignmentsListView.as_view(), name="assignment-list"),
     path("classrooms/<int:pk>/", ClassroomsDetailView.as_view(), name="classroom-detail"),

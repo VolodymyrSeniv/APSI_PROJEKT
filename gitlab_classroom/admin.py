@@ -1,10 +1,11 @@
 from django.contrib import admin
-from gitlab_classroom.models import Teacher, Classroom, Assignment, Student
+from gitlab_classroom.models import Teacher, Classroom, Assignment, Student, Assessment
 from django.contrib.auth.admin import UserAdmin
 
 # admin.site.register(Teacher, UserAdmin)
 # admin.site.register(Classroom)
 admin.site.register(Student)
+admin.site.register(Assessment)
 
 @admin.register(Teacher)
 class TeacherAdmin(UserAdmin):

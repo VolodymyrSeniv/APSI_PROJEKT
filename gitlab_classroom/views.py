@@ -13,8 +13,11 @@ from gitlab_classroom.forms import (ClassroomSearchForm,
                                     StudentSearchForm,
                                     AddStudentToClassroomForm,
                                     AddTeachersToClassroomForm,
-                                    UploadFileForm)
-from gitlab_classroom.models import Classroom, Assignment, Student, Teacher
+                                    UploadFileForm,
+                                    AssessmentForm,
+                                    AssessmentFormSet
+                                    )
+from gitlab_classroom.models import Classroom, Assignment, Student, Teacher, Assessment
 from gitlab_classroom.forms import AssignmentForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
@@ -54,6 +57,21 @@ class ClassroomsListView(LoginRequiredMixin, generic.ListView):
         """Override to filter assignments to those owned by the current user."""
         return queryset
 
+
+class AssessmentDetailView(LoginRequiredMixin, generic.ListView):
+    model = Assessment
+    context_object_name = "assessment"
+    template_name = 'gitlab_classroom/assessment_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        classroom_id = self.kwargs.get('pk')
+        context['assess_work'] = AssessmentForm(classroom_id=classroom_id)
+        return context
+    
+    def post(self, request, *args, **kwards):
+        self.object = self.get_object()
+        assessment_id = self.kwargs.get('pk')
 
 class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
     model = Classroom
@@ -590,8 +608,70 @@ class AssignmentsListView(LoginRequiredMixin, generic.ListView):
         return queryset.distinct()
 
 
+class AssessmentUpdateView(LoginRequiredMixin, generic.UpdateView):
+    template_name = "gitlab_classroom/assessment_update.html"
+    form_class    = AssessmentForm
+
+    def get_object(self, assignment_pk, student_pk, teacher):
+        return Assessment.objects.get_or_create(
+            assignment_id=assignment_pk,
+            student_id=student_pk,
+            teacher=teacher,
+            defaults={"score": 0, "feedback": ""},
+        )[0]
+
+    def get(self, request, assignment_pk, student_pk):
+        assessment = self.get_object(assignment_pk, student_pk, request.user)
+        form       = self.form_class(instance=assessment)
+        return render(request, self.template_name, {
+            "form": form,
+            "assessment": assessment,
+        })
+
+    def post(self, request, assignment_pk, student_pk):
+        assessment = self.get_object(assignment_pk, student_pk, request.user)
+        form       = self.form_class(request.POST, instance=assessment)
+        if form.is_valid():
+            form.save()
+            # redirect using the same named param
+            return redirect(
+                "gitlab_classroom:assignment-detail",
+                pk=assignment_pk
+            )
+        return render(request, self.template_name, {
+            "form": form,
+            "assessment": assessment,
+        })
+
+
 class AssignmentsDetailView(LoginRequiredMixin, generic.DetailView):
     model = Assignment
+    template_name = "gitlab_classroom/assignment_detail.html"
+    context_object_name = "assignment"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        assignment = self.object
+
+        # build a dict student_id → Assessment
+        assessments = {
+            a.student_id: a
+            for a in Assessment.objects.filter(
+                assignment=assignment,
+                teacher=self.request.user
+            ).select_related("student")
+        }
+
+        # now build a list of (student, assessment_or_None)
+        rows = []
+        for student in assignment.classroom.students.all():
+            rows.append({
+                "student": student,
+                "assessment": assessments.get(student.id)  # None if missing
+            })
+
+        ctx["rows"] = rows
+        return ctx
 
 
 class AssignmentCreateView(LoginRequiredMixin, generic.CreateView):

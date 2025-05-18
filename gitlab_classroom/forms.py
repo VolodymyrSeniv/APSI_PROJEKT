@@ -2,7 +2,9 @@ from django import forms
 from gitlab_classroom.models import (Assignment,
                                      Student,
                                      Classroom,
-                                     Teacher)
+                                     Teacher,
+                                     Assessment)
+from django.forms import inlineformset_factory
 
 
 class AssignmentForm(forms.ModelForm):
@@ -95,3 +97,29 @@ class UploadFileForm(forms.Form):
             'id': 'customFile',  # Custom ID for the input element
         }),
     )
+
+
+class AssessmentForm(forms.ModelForm):
+    class Meta:
+        model = Assessment
+        fields = ["score", "feedback"]
+        widgets = {
+            "score": forms.NumberInput(attrs={
+                "class": "form-control form-control-sm",
+                "min": 0,
+                "step": 1,             
+            }),
+            "feedback": forms.Textarea(attrs={
+                "rows": 2, 
+                "class": "form-control form-control-sm"
+            }),
+        }
+
+
+AssessmentFormSet = inlineformset_factory(
+    Assignment,
+    Assessment,
+    form=AssessmentForm,
+    extra=0,                
+    can_delete=False,
+)

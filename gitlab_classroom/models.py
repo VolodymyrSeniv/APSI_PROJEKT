@@ -85,3 +85,28 @@ class Assignment(models.Model): #assigment database model
     
     def get_absolute_url(self):#getting the url
         return reverse("gitlab_classroom:assignment-detail", args=[str(self.id)])
+
+
+class Assessment(models.Model):
+    assignment = models.ForeignKey(
+        "Assignment",
+        on_delete=models.CASCADE,
+        related_name="assessments_assignment",
+    )
+    student = models.ForeignKey(
+        "Student",
+        on_delete=models.CASCADE,
+        related_name="assessments_students",
+    )
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="given_assessments_teacher",
+    )
+    score = models.CharField(max_length=4, default="None")
+    feedback = models.TextField(blank=True)
+    assessed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("assignment", "student", "teacher")
+
