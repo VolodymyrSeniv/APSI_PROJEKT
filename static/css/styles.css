@@ -1,177 +1,293 @@
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  font-family: "Outfit", Arial, sans-serif;
+  background-color: #fffbf1;
 }
 .navbar {
-    background-color: black;
-    width: 100%;
-    padding: 10px 20px; /* Adjust padding as needed */
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    color: white;
+  background: linear-gradient(270deg, #fca225 0%, #fc6d24 100%);
+  width: 100%;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  color: #fffbf1;
+  height: 80px;
+  @media (max-width: 991px) {
+    height: 10vh;
+  }
 }
 .navbar a {
-    color: white;
-    text-decoration: none;
+  color: #fffbf1;
+  text-decoration: none;
+}
+.navbar a:hover,
+.navbar a:focus {
+  color: #fca225;
 }
 .navbar img {
-    height: 50px; /* Adjust based on your logo's size */
-    margin-right: 20px;
+  filter: drop-shadow(0 1px 0 #fffbf1) drop-shadow(0 -1px 0 #fffbf1)
+    drop-shadow(1px 0 0 #fffbf1) drop-shadow(-1px 0 0 #fffbf1)
+    drop-shadow(0 1px 0 #fffbf1) drop-shadow(0 -1px 0 #fffbf1)
+    drop-shadow(1px 0 0 #fffbf1) drop-shadow(-1px 0 0 #fffbf1);
+  -webkit-filter: drop-shadow(0 1px 0 #fffbf1) drop-shadow(0 -1px 0 #fffbf1)
+    drop-shadow(1px 0 0 #fffbf1) drop-shadow(-1px 0 0 #fffbf1)
+    drop-shadow(0 1px 0 #fffbf1) drop-shadow(0 -1px 0 #fffbf1)
+    drop-shadow(1px 0 0 #fffbf1) drop-shadow(-1px 0 0 #fffbf1);
+  padding-bottom: 2px;
+  height: 60px;
+  margin-left: 10px;
+  transition: transform 0.2s;
+
+  @media (max-width: 991px) {
+    margin-left: 0px;
+  }
 }
+.navbar img:hover,
+.navbar img:focus {
+  transform: scale(1.05);
+}
+
+.navbar-toggler {
+  background-color: #fffbf1;
+  border: none;
+  color: #141414;
+  font-size: 20px;
+  position: absolute;
+  right: 20px;
+}
+
 .application-name a {
-    font-size: 20px; /* Adjust as needed */
-    color: white;
-    text-decoration: none;
-    margin-right: 20px; /* Adjust the spacing between the application name and the nav items */
-    padding: 5px 10px;
-    border-radius: 5px;
+  font-size: 40px;
+  margin-left: 20px;
+  color: #fffbf1;
+  text-decoration: none;
+  border-radius: 30px;
+
+  @media (max-width: 991px) {
+    display: none;
+  }
 }
-.application-name a:hover, .application-name a:focus {
-    background-color: grey;
-    color: white;
+.application-name a:hover,
+.application-name a:focus {
+  color: #fffbf1;
 }
 .navbar-nav {
-    display: inline;
-    list-style-type: none; /* Removes bullet points from list */
+  display: inline;
+  list-style-type: none;
+  @media (max-width: 991px) {
+    z-index: 2000;
+    position: absolute;
+    top: 0;
+    left: 0;
     margin: 0;
-    padding: 0;
+    background: rgba(20, 20, 20, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    width: 100%;
+    height: 90vh;
+    margin-top: 10vh;
+  }
 }
 .nav-item {
-    display: inline;
-    margin: 0 10px; /* Adjust spacing between buttons */
+  display: inline;
+  margin: 0 10px;
 }
 .nav-link {
-    display: inline;
-    background-color: black;
-    color: black;
-    padding: 5px 10px;
-    border-radius: 5px; /* Rounded corners */
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
+  display: inline;
+  background-color: #141414;
+  border-radius: 30px;
+  text-decoration: none;
+  transition: background-color 0.3s, color 0.3s;
+  @media (max-width: 991px) {
+    margin-top: 10px;
+    display: block;
+    z-index: 2001;
+    text-align: center;
+  }
 }
-.nav-link:hover, .nav-link:focus {
-    background-color: grey;
-    color: white;
+.nav-link:hover,
+.nav-link:focus {
+  background-color: #fffbf1;
+  color: #141414;
 }
 
 .container {
-    max-width: 1200px; /* Adjust width as necessary */
+  max-width: 1200px;
 }
 
 .table {
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  vertical-align: middle;
+  text-align: center;
+  border-radius: 30px;
+  margin-bottom: 0;
+  background-color: #fffbf1 !important;
+}
+
+.table-responsive {
+  vertical-align: middle;
+  text-align: center;
+  border-radius: 30px 30px 30px 30px;
+  margin: 0;
+  padding: 0;
+}
+
+.table-responsive tbody {
+  border-radius: 0 0 30px 30px;
 }
 
 .btn-info {
-    color: #fff;
+  color: #fff;
+  border-radius: 30px;
 }
 
 a {
-    text-decoration: none;
-    color: inherit; /* Ensures links don't inherit anchor tag color styles */
+  text-decoration: none;
+  color: inherit;
 }
 
 a.btn-danger:hover {
-    opacity: 0.9;
+  opacity: 0.9;
 }
 
 a.btn-info:hover {
-    opacity: 0.9;
+  opacity: 0.9;
 }
 
-/* static/styles.css */
-
-/* Enhances spacing and visual separation */
 .container {
-    padding-top: 20px;
-    padding-bottom: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
-/* Customizes form layout for clarity */
 .form-inline {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .list-group-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .btn-danger {
-    margin-left: 10px;  /* Adds spacing between student name and button */
+  margin-left: 10px;
+  border-radius: 30px;
 }
 
-/* Style enhancements for forms and buttons */
 form button {
-    margin-top: 8px;
+  margin-top: 8px;
+  border-radius: 30px;
 }
 
-/* Style for the assignment list */
 .assignment-badge {
-    background-color: #007bff;  /* Primary color similar to Bootstrap's primary */
+  background-color: #007bff;
 }
 
 .title {
-    text-decoration: bold;
-    transition: color 0.3s ease, transform 0.3s ease;
-    padding: 2px 4px; /* Add some padding for the border */
-    border-radius: 4px; /* Slightly rounded corners */
-    font-weight: bold;
+  text-decoration: bold;
+  transition: color 0.3s ease, transform 0.3s ease;
+  padding: 5px 10px;
+  border-radius: 30px;
+  font-weight: bold;
 }
 
 .title:hover {
-    color: #0056b3; /* Darker shade of blue */
-    transform: scale(1.1); /* Slightly scale up the text */
-    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* Blue glow around the text */
-    border: 1px solid #007bff; /* Blue border around the text */
+  color: #0056b3;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+  border: 1px solid #007bff;
 }
 
+.btn-primary {
+  border-radius: 30px;
+}
 
+.btn-secondary {
+  border-radius: 30px;
+}
 
+.btn-success {
+  border-radius: 30px;
+}
 
 .btn-unified {
-    background-color: #0d6efd;
-    color: #fff;
-    border: 1px solid #0d6efd;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1.2;
-    font-family: Arial, sans-serif;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    text-decoration: none;
-    height: 38px;
-    box-sizing: border-box;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    vertical-align: middle; 
+  background-color: #fc6d24;
+  color: #fff;
+  border: 1px solid #fc6d24;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.2;
+  font-family: Arial, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  height: 38px;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  vertical-align: middle;
 }
 
-
 .row {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: nowrap;
-    align-items: flex-start; 
-  }
-  
-  .col-md-4 {
-    flex: 1 1 0; 
-    max-width: 33.3333%; 
-  }
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
 
-  .assignments-list {
-    margin-top: 43px;
-  }
+.col-md-4 {
+  flex: 1 1 0;
+  max-width: 33.3333%;
+}
 
-  .d-flex.justify-content-between.align-items-center {
-    align-items: baseline; 
-  }
+.assignments-list {
+  margin-top: 43px;
+}
+
+.d-flex.justify-content-between.align-items-center {
+  align-items: baseline;
+}
+
+.card {
+  border: 2px solid #141414;
+  border-radius: 30px;
+  overflow: clip;
+}
+
+.card-header {
+  background-color: #fca225;
+  border-width: 0 0 2px 0;
+  color: #141414;
+  text-align: center;
+}
+
+.textinput {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
+
+.textarea {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
+
+#access_token {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
+
+.emailinput {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
+
+.alert {
+  border-radius: 30px;
+  border-width: 2px;
+  text-align: center;
+}
