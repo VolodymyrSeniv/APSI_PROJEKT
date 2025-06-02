@@ -7,7 +7,9 @@
   <p><strong>Deadline:</strong> {{ assignment.deadline|date:"F j, Y, g:i a" }}</p>
 
   <h2 class="mt-5">Your Grades & Feedback</h2>
-  <table class="table table-bordered table-striped mt-3">
+
+  <div class="table-responsive">
+  <table class="table table-bordered table-striped pt-3">
     <thead class="table-dark">
       <tr>
         <th>Student</th>
@@ -42,5 +44,6 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </div>
 {% endblock %}

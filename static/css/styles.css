@@ -291,3 +291,13 @@ form button {
   border-width: 2px;
   text-align: center;
 }
+
+.datetimeinput {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
+
+.form-control {
+  border: 2px solid #141414;
+  border-radius: 30px;
+}
