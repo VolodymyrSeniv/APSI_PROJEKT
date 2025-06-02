@@ -633,6 +633,47 @@ class AssessmentUpdateView(LoginRequiredMixin, generic.UpdateView):
         form       = self.form_class(request.POST, instance=assessment)
         if form.is_valid():
             form.save()
+            gl = gitlab.Gitlab(
+                "https://gitlab-stud.elka.pw.edu.pl",
+                private_token=self.request.session["access_token"],
+            )
+            # Add assessment as an issue in the student's repository
+            assignment = assessment.assignment
+            student = assessment.student
+
+            # Find the student's project in the assignment group
+            assignment_group = gl.groups.get(assignment.gitlab_id)
+            projects = assignment_group.projects.list(search=student.gitlab_username)
+            student_project = None
+            for project in projects:
+                if student.gitlab_username.lower() in project.name.lower():
+                    student_project = gl.projects.get(project.id)
+                    break
+
+            if student_project:
+                issue_title = f"Assignment assessment"
+                issue_description = (
+                    f"Score: {assessment.score}\n\nFeedback:\n{assessment.feedback}"
+                )
+                # Check if an issue already exists for this assessment
+                existing_issues = student_project.issues.list(search=issue_title)
+                if not existing_issues:
+                    student_project.issues.create(
+                        {
+                            "title": issue_title,
+                            "description": issue_description,
+                        }
+                    )
+                else:
+                    # Optionally update the existing issue
+                    issue = existing_issues[0]
+                    issue.description = issue_description
+                    issue.save()
+            else:
+                messages.warning(
+                    request, "Student's project not found. Issue not created."
+                )
+
             # redirect using the same named param
             return redirect(
                 "gitlab_classroom:assignment-detail",
