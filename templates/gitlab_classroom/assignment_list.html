@@ -12,6 +12,7 @@
     </form>
 
     {% if assignment_list %}
+    <div class="table-responsive">
     <table class="table table-striped">
         <thead class="table-dark">
             <tr>
@@ -42,6 +43,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
     <h2 class="text-center">No assignments found.</h2>
     {% endif %}

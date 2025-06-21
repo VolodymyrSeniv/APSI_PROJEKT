@@ -13,6 +13,7 @@
     </form>
 
     {% if classroom_list %}
+    <div class="table-responsive">
     <table class="table table-striped">
         <thead class="table-dark">
             <tr>
@@ -33,6 +34,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
     <h2 class="text-center">There are no classrooms available.</h2>
     {% endif %}
