@@ -13,7 +13,7 @@ Before running the GitLab Classroom application, make sure you have the followin
 3. **Virtualenv**: It's recommended to use a virtual environment for managing dependencies. You can install it using:
    ```bash
    pip install virtualenv
-
+   ```
 ## Setting Up the Environment
 
 1. **Create a virtual environment**:
@@ -28,7 +28,7 @@ Before running the GitLab Classroom application, make sure you have the followin
    *macOS/Linux*:
    ```bash
    source venv/bin/activate
-   bash
+   ```
 5. **Install the required dependencies using pip**:
    ```bash
    pip install -r requirements.txt
@@ -45,4 +45,4 @@ Before running the GitLab Classroom application, make sure you have the followin
     ```bash
     python manage.py runserver
     ```
-14. **Open your web browser and navigate to http://127.0.0.1:8000/ to access the application**.
+14. **Open your web browser and navigate to [site](http://127.0.0.1:8000/) to access the application**.

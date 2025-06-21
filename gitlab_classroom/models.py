@@ -110,3 +110,19 @@ class Assessment(models.Model):
     class Meta:
         unique_together = ("assignment", "student", "teacher")
 
+
+class GroupProject(models.Model):
+    name = models.CharField(max_length=255, unique=True)  # chyba można zrobić unikatowe?
+    description = models.TextField()
+    students = models.ManyToManyField(
+        Student,
+        related_name="student_groups"
+    )
+    teacher = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="group_projects"
+    )
+    deadline = models.DateTimeField(help_text="The deadline of the project")
+
+    class Meta:
+        ordering = ["-name"]
