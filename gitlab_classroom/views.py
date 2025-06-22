@@ -4,7 +4,7 @@ import gitlab
 import re
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
-from django.forms import BaseModelForm
+from django.forms import BaseModelForm, modelformset_factory
 from django.shortcuts import render, redirect
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.views import generic
@@ -15,15 +15,19 @@ from gitlab_classroom.forms import (ClassroomSearchForm,
                                     AddTeachersToClassroomForm,
                                     UploadFileForm,
                                     AssessmentForm,
-                                    AssessmentFormSet
+                                    AssessmentFormSet,
+                                    GroupProjectForm,
                                     )
-from gitlab_classroom.models import Classroom, Assignment, Student, Teacher, Assessment
+from gitlab_classroom.models import Classroom, Assignment, Student, Teacher, Assessment, GroupProject
 from gitlab_classroom.forms import AssignmentForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from gitlab import GitlabGetError
+
+
+GITLAB_URL = "https://gitlab-stud.elka.pw.edu.pl"
 
 
 # Create your views here.
@@ -88,7 +92,7 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         classroom_id = self.kwargs.get('pk')
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
         if 'add_student' in request.POST:
             add_form = AddStudentToClassroomForm(request.POST, classroom_id=classroom_id)
             if add_form.is_valid():
@@ -184,7 +188,7 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
         return self.render_to_response(self.get_context_data())
 
     def create_or_get_subgroup(self, parent_group, subgroup_name):
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
         subgroups = parent_group.subgroups.list(all=True)
         for subgroup in subgroups:
             if subgroup.name == subgroup_name:
@@ -198,7 +202,7 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
 
     def fork_project_for_students(self, assignments_group, base_project_id, student_group, teachers_group):
         user = self.request.user
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
         students = gl.groups.get(student_group.id).members.list(all=True)
         teachers = gl.groups.get(teachers_group.id).members.list(all=True)
         base_project = gl.projects.get(base_project_id)
@@ -255,7 +259,7 @@ class ClassroomCreateView(LoginRequiredMixin, generic.CreateView):
         except KeyError:
             return HttpResponse(status=403)  # Forbidden if no access token
 
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=access_token)
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=access_token)
 
         # Sanitize the title to create a valid path
         sanitized_title = re.sub(r'[^a-zA-Z0-9_\-.]', '_', self.object.title.lower()).strip('-.')
@@ -313,7 +317,7 @@ class ClassroomUpdateView(LoginRequiredMixin, generic.UpdateView):
             gitlab_group_id = form.instance.gitlab_id
             # Example: update a GitLab group's name or other details
             # Configure access to your GitLab instance
-            gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+            gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
             group = gl.groups.get(gitlab_group_id)
             # Assuming you want to update the name of the group based on a field in your form
             group.name = form.cleaned_data['title']
@@ -342,7 +346,7 @@ class ClassroomDeleteView(LoginRequiredMixin, generic.DeleteView):
         self.object = self.get_object()
         response = super().form_valid(form)
         if self.object.gitlab_id:
-            gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+            gl = gitlab.Gitlab(GITLAB_URL,
                             private_token=self.request.session["access_token"])
             try:
                 group = gl.groups.get(self.object.gitlab_id)
@@ -415,7 +419,7 @@ class StudentsListView(LoginRequiredMixin, generic.ListView):
 
 
     def check_gitlab_students(self):
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                            private_token=self.request.session["access_token"])
 
         students = Student.objects.all()
@@ -434,7 +438,7 @@ class StudentsListView(LoginRequiredMixin, generic.ListView):
             student.save()
 
     def handle_txt_file(self, file):
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                         private_token=self.request.session["access_token"])
         for line in file:
             line = line.decode('utf-8').strip()
@@ -466,7 +470,7 @@ class StudentsListView(LoginRequiredMixin, generic.ListView):
 
     def handle_csv_file(self, file):
         reader = csv.DictReader(file.read().decode('utf-8').splitlines())
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                            private_token=self.request.session["access_token"])
         for row in reader:
             if Student.objects.filter(gitlab_username=row['gitlab_username'].strip()).exists():
@@ -493,7 +497,7 @@ class StudentsListView(LoginRequiredMixin, generic.ListView):
 
     def handle_json_file(self, file):
         data = json.load(file)
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                            private_token=self.request.session["access_token"])
         for entry in data:
             if Student.objects.filter(gitlab_username=entry['gitlab_username'].strip()).exists():
@@ -534,7 +538,7 @@ class StudentCreateView(LoginRequiredMixin, generic.CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                         private_token=self.request.session["access_token"])
         try:
             students = gl.users.list(username=self.object.gitlab_username)
@@ -653,24 +657,26 @@ class AssignmentsDetailView(LoginRequiredMixin, generic.DetailView):
         ctx = super().get_context_data(**kwargs)
         assignment = self.object
 
-        # build a dict student_id → Assessment
-        assessments = {
-            a.student_id: a
-            for a in Assessment.objects.filter(
-                assignment=assignment,
-                teacher=self.request.user
-            ).select_related("student")
-        }
-
-        # now build a list of (student, assessment_or_None)
-        rows = []
-        for student in assignment.classroom.students.all():
-            rows.append({
-                "student": student,
-                "assessment": assessments.get(student.id)  # None if missing
-            })
-
-        ctx["rows"] = rows
+        if assignment.is_group:
+            # Jeśli zadanie jest grupowe, pokaż grupy i ich studentów
+            groups = GroupProject.objects.filter(assignment=assignment).prefetch_related("students")
+            ctx["groups"] = groups
+        else:
+            # Zadanie indywidualne — tak jak teraz pokazujemy studentów i oceny
+            assessments = {
+                a.student_id: a
+                for a in Assessment.objects.filter(
+                    assignment=assignment,
+                    teacher=self.request.user
+                ).select_related("student")
+            }
+            rows = []
+            for student in assignment.classroom.students.all():
+                rows.append({
+                    "student": student,
+                    "assessment": assessments.get(student.id)
+                })
+            ctx["rows"] = rows
         return ctx
 
 
@@ -685,7 +691,7 @@ class AssignmentCreateView(LoginRequiredMixin, generic.CreateView):
         form.instance.teacher = user
         classroom = get_object_or_404(Classroom, pk=self.kwargs.get('pk'))
         form.instance.classroom = classroom
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl',
+        gl = gitlab.Gitlab(GITLAB_URL,
                            private_token=self.request.session["access_token"])
         template_id = form.cleaned_data.get('template_id')
         try:
@@ -726,7 +732,7 @@ class AssignmentUpdateView(LoginRequiredMixin, generic.UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
         try:
             gitlab_group_id = form.instance.gitlab_id
             group = gl.groups.get(gitlab_group_id)
@@ -748,7 +754,7 @@ class AssignmentDeleteView(LoginRequiredMixin, generic.DeleteView):
         try:
             self.object = self.get_object()
             gitlab_assignment_id = self.object.gitlab_id
-            gl = gitlab.Gitlab('https://gitlab-stud.elka.pw.edu.pl', private_token=self.request.session["access_token"])
+            gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
             response = super().form_valid(form)
             group = gl.groups.get(gitlab_assignment_id)
             group.delete()
@@ -758,3 +764,194 @@ class AssignmentDeleteView(LoginRequiredMixin, generic.DeleteView):
             group = gl.groups.get(gitlab_assignment_id)
             group.delete()
         return response
+    
+
+class GroupProjectAssessmentUpdateView(LoginRequiredMixin, generic.View):
+    template_name = "gitlab_classroom/group_project_assessment_update.html"
+    form_class = AssessmentForm
+
+    def get(self, request, group_pk):
+        group = get_object_or_404(GroupProject, pk=group_pk)
+        students = group.students.all()
+        assignment = group.assignment
+
+        AssessmentFormSet = modelformset_factory(
+            Assessment,
+            form=self.form_class,
+            extra=0
+        )
+
+        assessments = []
+        for student in students:
+            assessment, created = Assessment.objects.get_or_create(
+                assignment=assignment,
+                student=student,
+                teacher=request.user,
+                defaults={"score": 0, "feedback": ""}
+            )
+            assessments.append(assessment)
+
+        formset = AssessmentFormSet(queryset=Assessment.objects.filter(id__in=[a.id for a in assessments]))
+
+        return render(request, self.template_name, {
+            "formset": formset,
+            "group": group,
+        })
+
+    def post(self, request, group_pk):
+        group = get_object_or_404(GroupProject, pk=group_pk)
+        students = group.students.all()
+        assignment = group.assignment
+
+        AssessmentFormSet = modelformset_factory(
+            Assessment,
+            form=self.form_class,
+            extra=0
+        )
+
+        # Pobierz oceny (lub je utwórz) jak w get, by mieć te same obiekty
+        assessments = []
+        for student in students:
+            assessment, created = Assessment.objects.get_or_create(
+                assignment=assignment,
+                student=student,
+                teacher=request.user,
+                defaults={"score": 0, "feedback": ""}
+            )
+            assessments.append(assessment)
+
+        formset = AssessmentFormSet(request.POST, queryset=Assessment.objects.filter(id__in=[a.id for a in assessments]))
+
+        if formset.is_valid():
+            formset.save()
+            messages.success(request, "Oceny zostały zapisane.")
+            return redirect('gitlab_classroom:assignment-detail', pk=assignment.pk)
+
+        # Jeśli formularz nie jest ważny, renderujemy z błędami
+        return render(request, self.template_name, {
+            "formset": formset,
+            "group": group,
+        })
+
+
+class GroupProjectCreateView(LoginRequiredMixin, generic.CreateView):
+    model = GroupProject
+    form_class = GroupProjectForm
+    template_name = "gitlab_classroom/groupproject_form.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        assignment = get_object_or_404(Assignment, pk=self.kwargs.get('pk'))
+        kwargs['assignment_id'] = assignment.pk  # przekazujemy assignment_id do formularza
+        return kwargs
+
+    def form_valid(self, form):
+        assignment = get_object_or_404(Assignment, pk=self.kwargs.get('pk'))
+        form.instance.assignment = assignment
+        response = super().form_valid(form)
+
+        # Ustawiamy teacher (ManyToMany) po zapisaniu obiektu
+        form.instance.teacher.add(self.request.user)
+
+        # Inicjalizacja GitLab
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session.get("access_token"))
+
+        classroom = assignment.classroom
+
+        if classroom.gitlab_id:
+            try:
+                group = gl.groups.get(classroom.gitlab_id)
+                subgroups = group.subgroups.list(all=True)
+                projects_group = gl.groups.get(subgroups[0].id)  # zakładam, że subgrupa istnieje
+
+                sanitized_title = re.sub(r'[^a-zA-Z0-9_\-.]', '_', form.instance.name.lower()).strip('-.')
+                subgroup_data = {
+                    "name": sanitized_title,
+                    "path": f"{projects_group.name}_{sanitized_title}",
+                    "description": form.instance.description,
+                    "parent_id": projects_group.id,
+                }
+
+                # Tworzymy podgrupę na GitLab dla projektu grupowego
+                gitlab_group = gl.groups.create(subgroup_data)
+
+                self.object.repo_url = gitlab_group.web_url
+                self.object.gitlab_id = gitlab_group.id
+                self.object.save()
+
+                # Dodajemy studentów do grupy GitLab
+                for student in form.cleaned_data['students']:
+                    gl_users = gl.users.list(username=student.gitlab_username)
+                    if gl_users:
+                        gitlab_group.members.create({
+                            'user_id': gl_users[0].id,
+                            'access_level': gitlab.DEVELOPER_ACCESS
+                        })
+
+                messages.success(self.request, "Group project was successfully created")
+
+            except Exception as e:
+                messages.error(self.request, f"Error occured: {str(e)}")
+
+        return response
+
+    def get_success_url(self):
+        return reverse('gitlab_classroom:assignment-detail', args=[self.object.assignment.pk])
+
+
+class GroupProjectUpdateView(LoginRequiredMixin, generic.UpdateView):
+    model = GroupProject
+    form_class = GroupProjectForm
+    template_name = "gitlab_classroom/groupproject_form.html"
+    success_url = reverse_lazy("gitlab_classroom:group-project-list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
+        try:
+            gitlab_group_id = form.instance.gitlab_id
+            group = gl.groups.get(gitlab_group_id)
+            group.name = form.cleaned_data["title"]
+            group.description = form.cleaned_data["description"]
+            group.save()
+            messages.success(self.request, "Group project was updated successfully")
+        except Exception as e:
+            messages.error(self.request, f"Error occured. Group project doesn't exist on GitLab: {str(e)}")
+        return response
+
+
+class GroupProjectDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = GroupProject
+    template_name = "gitlab_classroom/groupproject_confirm_delete.html"
+    success_url = reverse_lazy("gitlab_classroom:group-project-list")
+
+    def form_valid(self, form):
+        try:
+            self.object = self.get_object()
+            gitlab_group_id = self.object.gitlab_id
+            gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
+            response = super().form_valid(form)
+            group = gl.groups.get(gitlab_group_id)
+            group.delete()
+            messages.success(self.request, "Group project was deleted successfully")
+        except Exception as e:
+            messages.error(self.request, f"Error occured. Group project doesn't exist on GitLab: {str(e)}")
+        return response
+
+
+class GroupProjectDetailView(LoginRequiredMixin, generic.DetailView):
+    model = GroupProject
+    template_name = "gitlab_classroom/groupproject_detail.html"
+    context_object_name = "group_project"
+
+    def get_queryset(self):
+        # Możesz ograniczyć queryset np. do grup z przypisaniem do zadania,
+        # lub dodać dodatkowe filtrowanie jeśli chcesz
+        return GroupProject.objects.all()
+
+    # opcjonalnie, jeśli chcesz mieć dodatkowe dane w kontekście:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # np. możesz dodać assignment lub studentów do kontekstu
+        context['students'] = self.object.students.all()
+        return context

@@ -3,7 +3,8 @@ from gitlab_classroom.models import (Assignment,
                                      Student,
                                      Classroom,
                                      Teacher,
-                                     Assessment)
+                                     Assessment,
+                                     GroupProject)
 from django.forms import inlineformset_factory
 
 
@@ -123,3 +124,32 @@ AssessmentFormSet = inlineformset_factory(
     extra=0,                
     can_delete=False,
 )
+
+
+class GroupProjectForm(forms.ModelForm):
+    students = forms.ModelMultipleChoiceField(
+        queryset=Student.objects.none(),
+        label='Studenci',
+        required=True,
+    )
+
+    class Meta:
+        model = GroupProject
+        fields = ['name', 'description', 'students']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        assignment_id = kwargs.pop('assignment_id', None)
+        exclude_students = kwargs.pop('exclude_students', None)  # lista studentów do wykluczenia
+        super().__init__(*args, **kwargs)
+        if assignment_id:
+            assignment = Assignment.objects.get(pk=assignment_id)
+            classroom_students = assignment.classroom.students.all()
+            if exclude_students:
+                classroom_students = classroom_students.exclude(id__in=exclude_students)
+            self.fields['students'].queryset = classroom_students
+        else:
+            self.fields['students'].queryset = Student.objects.none()
