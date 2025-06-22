@@ -131,6 +131,8 @@ class GroupProject(models.Model):
         related_name="group_projects"
     )
 
+    gitlab_group_id = models.PositiveIntegerField(null=True, blank=True)
+
     class Meta:
         ordering = ["-name"]
 

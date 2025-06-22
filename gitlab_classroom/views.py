@@ -930,33 +930,22 @@ class GroupProjectCreateView(LoginRequiredMixin, generic.CreateView):
 
         if classroom.gitlab_id:
             try:
-                group = gl.groups.get(classroom.gitlab_id)
-                subgroups = group.subgroups.list(all=True)
-                projects_group = gl.groups.get(subgroups[0].id)  # zakładam, że subgrupa istnieje
+                group = gl.groups.get(assignment.gitlab_id)
 
                 sanitized_title = re.sub(r'[^a-zA-Z0-9_\-.]', '_', form.instance.name.lower()).strip('-.')
                 subgroup_data = {
                     "name": sanitized_title,
-                    "path": f"{projects_group.name}_{sanitized_title}",
+                    "path": sanitized_title,
                     "description": form.instance.description,
-                    "parent_id": projects_group.id,
+                    "parent_id": group.id,
                 }
 
                 # Tworzymy podgrupę na GitLab dla projektu grupowego
                 gitlab_group = gl.groups.create(subgroup_data)
 
                 self.object.repo_url = gitlab_group.web_url
-                self.object.gitlab_id = gitlab_group.id
+                self.object.gitlab_group_id = gitlab_group.id
                 self.object.save()
-
-                # Dodajemy studentów do grupy GitLab
-                for student in form.cleaned_data['students']:
-                    gl_users = gl.users.list(username=student.gitlab_username)
-                    if gl_users:
-                        gitlab_group.members.create({
-                            'user_id': gl_users[0].id,
-                            'access_level': gitlab.DEVELOPER_ACCESS
-                        })
 
                 messages.success(self.request, "Group project was successfully created")
 
@@ -973,7 +962,7 @@ class GroupProjectUpdateView(LoginRequiredMixin, generic.UpdateView):
     model = GroupProject
     form_class = GroupProjectForm
     template_name = "gitlab_classroom/groupproject_form.html"
-    success_url = reverse_lazy("gitlab_classroom:group-project-list")
+    # success_url = reverse_lazy("gitlab_classroom:assignment-detail")
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -988,25 +977,34 @@ class GroupProjectUpdateView(LoginRequiredMixin, generic.UpdateView):
         except Exception as e:
             messages.error(self.request, f"Error occured. Group project doesn't exist on GitLab: {str(e)}")
         return response
+    
+    def get_success_url(self):
+        return reverse_lazy("gitlab_classroom:assignment-detail", kwargs={"pk": self.object.assignment.pk})
 
 
 class GroupProjectDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = GroupProject
     template_name = "gitlab_classroom/groupproject_confirm_delete.html"
-    success_url = reverse_lazy("gitlab_classroom:group-project-list")
 
     def form_valid(self, form):
+        self.object = self.get_object()
+        gitlab_group_id = self.object.gitlab_group_id
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
+
+        # Zapisz response wcześniej, żeby był dostępny nawet w przypadku błędu
+        response = super().form_valid(form)
+
         try:
-            self.object = self.get_object()
-            gitlab_group_id = self.object.gitlab_id
-            gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
-            response = super().form_valid(form)
             group = gl.groups.get(gitlab_group_id)
             group.delete()
             messages.success(self.request, "Group project was deleted successfully")
         except Exception as e:
-            messages.error(self.request, f"Error occured. Group project doesn't exist on GitLab: {str(e)}")
+            messages.error(self.request, f"Error occurred. Group project doesn't exist on GitLab: {str(e)}")
+
         return response
+    
+    def get_success_url(self):
+        return reverse_lazy("gitlab_classroom:assignment-detail", kwargs={"pk": self.object.assignment.pk})
 
 
 class GroupProjectDetailView(LoginRequiredMixin, generic.DetailView):
