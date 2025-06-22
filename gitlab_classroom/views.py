@@ -172,16 +172,26 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
         elif 'fork_projects' in request.POST:
             assignment_id = request.POST.get('assignment_id')
             assignment = get_object_or_404(Assignment, pk=assignment_id)
+
             try:
-                    gitlab_template_id = assignment.template_id
+                gitlab_template_id = assignment.template_id
+                classroom_group = gl.groups.get(self.object.gitlab_id)
+                students_group = self.create_or_get_subgroup(classroom_group, 'STUDENTS')
+                teachers_group = self.create_or_get_subgroup(classroom_group, 'TEACHERS')
+
+                if assignment.is_group:
+                    # Fork projektu grupowego
+                    assignments_group = self.create_or_get_subgroup(classroom_group, 'ASSIGNMENTS')
+                    self.fork_project_for_group_assignment(assignment, assignments_group, teachers_group)
+                    messages.success(request, "Projekt grupowy został zforkowany i studenci zostali dodani.")
+                else:
+                    # Fork projektu indywidualnego
                     assignments_group = gl.groups.get(assignment.gitlab_id)
-                    classroom_group = gl.groups.get(self.object.gitlab_id)
-                    students_group = self.create_or_get_subgroup(classroom_group, 'STUDENTS')
-                    teachers_group = self.create_or_get_subgroup(classroom_group, "TEACHERS")
                     self.fork_project_for_students(assignments_group, gitlab_template_id, students_group, teachers_group)
-                    messages.success(self.request, "Projects successfully forked for all students.")
+                    messages.success(request, "Projekty zostały zforkowane dla wszystkich studentów.")
+
             except Exception as e:
-                    messages.error(self.request, f"An error occurred during forking: {e}")
+                messages.error(request, f"Błąd podczas forkingu: {e}")
 
             return HttpResponseRedirect(self.object.get_absolute_url())
 
@@ -235,6 +245,66 @@ class ClassroomsDetailView(LoginRequiredMixin, generic.DetailView):
                     print(f"Project forked for {student.username} in subgroup {personal_group_name}")
 
         return self.render_to_response(self.get_context_data())
+    
+    def fork_project_for_group_assignment(self, assignment, classroom_group, teachers_group):
+        user = self.request.user
+        gl = gitlab.Gitlab(GITLAB_URL, private_token=self.request.session["access_token"])
+        base_project = gl.projects.get(assignment.template_id)
+        
+        # 1. Tworzymy (lub pobieramy) podgrupę z nazwą zadania w grupie klasy
+        assignment_subgroup = self.create_or_get_subgroup(classroom_group, sanitize_name(assignment.title))
+        
+        # Pobierz listę grup projektowych powiązanych z assignment
+        group_projects = assignment.group_projects.all()  # Dopasuj nazwę relacji
+        
+        teachers = gl.groups.get(teachers_group.id).members.list(all=True)
+
+        for group_project in group_projects:
+            # 2. Tworzymy podgrupę dla każdej grupy projektowej w podgrupie zadania
+            project_group_subgroup = self.create_or_get_subgroup(assignment_subgroup, sanitize_name(group_project.name))
+
+            # 3. Sprawdzamy, czy projekt już istnieje w tej podgrupie
+            group_project_name = sanitize_name(f"{assignment.title}_project")
+            existing_projects = gl.projects.list(search=group_project_name)
+            project_exists = any(proj for proj in existing_projects if proj.namespace['id'] == project_group_subgroup.id)
+
+            if not project_exists:
+                # Forkujemy bazowy projekt do podgrupy grupy projektowej
+                forked_project_data = base_project.forks.create({
+                    'namespace': project_group_subgroup.id,
+                    'name': group_project_name,
+                    'path': group_project_name
+                })
+                forked_project = gl.projects.get(forked_project_data.id)
+
+                # 4. Dodajemy studentów z tej grupy do forkowanego projektu
+                for student in group_project.students.all():
+                    try:
+                        gl_users = gl.users.list(username=student.gitlab_username)
+                        if gl_users:
+                            gl_user = gl_users[0]
+                            forked_project.members.create({
+                                'user_id': gl_user.id,
+                                'access_level': gitlab.const.AccessLevel.DEVELOPER
+                            })
+                    except Exception as e:
+                        print(f"Nie udało się dodać studenta {student} do projektu: {e}")
+
+                # Dodajemy nauczycieli jako MAINTAINER
+                for teacher in teachers:
+                    if int(teacher.id) == int(user.gitlab_id):
+                        continue
+                    try:
+                        forked_project.members.create({
+                            'user_id': teacher.id,
+                            'access_level': gitlab.const.AccessLevel.MAINTAINER
+                        })
+                    except Exception as e:
+                        print(f"Nie udało się dodać nauczyciela {teacher} do projektu: {e}")
+
+                print(f"Projekt grupowy '{group_project_name}' został zforkowany w podgrupie '{project_group_subgroup.name}' i dodano studentów.")
+            else:
+                print(f"Projekt grupowy '{group_project_name}' już istnieje w podgrupie '{project_group_subgroup.name}'.")
 
 def sanitize_name(name):
         # Replace any invalid characters with '_'
