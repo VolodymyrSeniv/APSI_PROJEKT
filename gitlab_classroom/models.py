@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Avg
 from django.contrib.auth.models import AbstractUser
 from gitlab_service import settings
 from django.urls import reverse
@@ -65,7 +66,7 @@ class Assignment(models.Model): #assigment database model
     repo_url = models.URLField()
     gitlab_id = models.IntegerField(default=0, blank=True)
     students = models.ManyToManyField(Student, related_name="assignment")
-    is_group = models.BooleanField() 
+    is_group = models.BooleanField(default=False) 
     template_id = models.IntegerField()
     teachers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -122,7 +123,29 @@ class GroupProject(models.Model):
         settings.AUTH_USER_MODEL,
         related_name="group_projects"
     )
-    deadline = models.DateTimeField(help_text="The deadline of the project")
+    # deadline = models.DateTimeField(help_text="The deadline of the project")
+
+    assignment = models.ForeignKey(  # dodajemy FK do zadania
+        "Assignment",
+        on_delete=models.CASCADE,
+        related_name="group_projects"
+    )
+
+    gitlab_group_id = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["-name"]
+
+    @property
+    def assessment_summary(self):
+        assessments = Assessment.objects.filter(
+            assignment=self.assignment,
+            student__in=self.students.all()
+        )
+        if not assessments.exists():
+            return None
+        avg_score = assessments.aggregate(Avg('score'))['score__avg']
+        return {
+            'count': assessments.count(),
+            'avg': avg_score,
+        }

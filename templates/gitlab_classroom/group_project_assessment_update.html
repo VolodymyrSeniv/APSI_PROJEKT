@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Edytuj oceny i feedback - grupa: {{ group.name }}</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Ocena</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for form in formset %}
+          <tr>
+            {{ form.id }}  {# ważne, żeby dodać ukryte pole id #}
+            <td>{{ form.instance.student.first_name }} {{ form.instance.student.second_name }}</td>
+            <td>{{ form.score|as_crispy_field }}</td>
+            <td>{{ form.feedback|as_crispy_field }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Zapisz oceny</button>
+    <a href="javascript:history.back()" class="btn btn-secondary mt-2">Anuluj</a>
+  </form>
+</div>
+{% endblock %}

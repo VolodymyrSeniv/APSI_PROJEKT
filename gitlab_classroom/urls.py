@@ -15,7 +15,13 @@ from gitlab_classroom.views import (index,
                           StudentCreateView,
                           StudentUpdateView,
                           StudentDeleteView,
-                          AssessmentUpdateView)
+                          AssessmentUpdateView,
+                          GroupProjectAssessmentUpdateView,
+                          GroupProjectCreateView,
+                          GroupProjectDeleteView,
+                          GroupProjectDetailView,
+                        #   GroupProjectListView,
+                          GroupProjectUpdateView)
 
 
 urlpatterns = [
@@ -23,6 +29,11 @@ urlpatterns = [
     path("assignments/<int:assignment_pk>/assess/<int:student_pk>/",
     AssessmentUpdateView.as_view(),
     name="assessment-update",
+    ),
+    path(
+        'group-projects/<int:group_pk>/assessments/update/',
+        GroupProjectAssessmentUpdateView.as_view(),
+        name='group-project-assessment-update'
     ),
     path("classrooms/", ClassroomsListView.as_view(), name="classroom-list"),
     path("assignments/", AssignmentsListView.as_view(), name="assignment-list"),
@@ -39,6 +50,11 @@ urlpatterns = [
     path("students/create/", StudentCreateView.as_view(), name="student-create"),
     path("students/<int:pk>/update/", StudentUpdateView.as_view(), name="student-update"),
     path("students/<int:pk>/delete/", StudentDeleteView.as_view(), name="student-delete"),
+    # path("group-projects/", GroupProjectListView.as_view(), name="group-project-list"),
+    path("group-projects/<int:pk>/create/", GroupProjectCreateView.as_view(), name="group-project-create"),
+    path("group-projects/<int:pk>/", GroupProjectDetailView.as_view(), name="group-project-detail"),
+    path("group-projects/<int:pk>/update/", GroupProjectUpdateView.as_view(), name="group-project-update"),
+    path("group-projects/<int:pk>/delete/", GroupProjectDeleteView.as_view(), name="group-project-delete"),
 ]
 
 

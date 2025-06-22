@@ -31,7 +31,7 @@ class AssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(GroupProject)
 class GroupProjectAdmin(admin.ModelAdmin):
-    list_display = ["name", "deadline",]
-    list_filter = ["teacher", "deadline",]
+    list_display = ["name"]
+    list_filter = ["teacher"]
     search_fields = ["name", "description",]
     filter_horizontal = ["students", "teacher"]

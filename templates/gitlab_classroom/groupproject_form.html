@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Utwórz nową grupę projektową</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" name="add_group" class="btn btn-primary ms-2">Zapisz</button>
+    <a href="javascript:history.back()" class="btn btn-secondary mt-2">Anuluj</a>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    $('#id_students').select2({
+      placeholder: "Wybierz studentów",
+      width: '100%',
+      allowClear: true
+    });
+  });
+</script>
+{% endblock %}
+

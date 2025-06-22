@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>Grupa projektowa: {{ object.name }}</h1>
+  <p>{{ object.description }}</p>
+  <p>Liczba studentów: {{ object.students.count }}</p>
+
+  <h3>Studenci w grupie:</h3>
+  <ul>
+    {% for student in object.students.all %}
+      <li>
+        <a href="{{ student.get_absolute_url }}">
+          {{ student.first_name }} {{ student.second_name }}
+        </a>
+      </li>
+    {% empty %}
+      <li>Brak studentów w grupie.</li>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'gitlab_classroom:assignment-detail' object.assignment.pk %}" class="btn btn-secondary mt-3">Wróć do zadania</a>
+</div>
+{% endblock %}
